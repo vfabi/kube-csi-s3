@@ -1,0 +1,65 @@
+{{- if .Values.examples.setup }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: csi-s3-example
+  namespace: default
+  labels:
+    {{- include "kube-csi-s3.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: csi-s3
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csi-s3-example
+  namespace: default
+  labels:
+    {{- include "kube-csi-s3.labels" . | nindent 4 }}
+spec:
+  containers:
+  - name: csi-s3-example
+    image: nginx
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "250m"
+    livenessProbe:
+      exec:
+        command:
+        - /bin/sh
+        - -c
+        - touch /var/lib/www/html/livenessprobe.tmp && sleep 2 && rm -f /var/lib/www/html/livenessprobe.tmp
+      initialDelaySeconds: 10
+      periodSeconds: 12
+      timeoutSeconds: 8
+      failureThreshold: 1
+    volumeMounts:
+      - mountPath: /var/lib/www/html
+        name: webroot
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/arch
+            operator: In
+            values:
+            - amd64
+  volumes:
+   - name: webroot
+     persistentVolumeClaim:
+       claimName: csi-s3-example
+       readOnly: false
+{{ end }}
