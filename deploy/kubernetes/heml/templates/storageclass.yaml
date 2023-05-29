@@ -1,0 +1,32 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: csi-s3
+  labels:
+    {{- include "kube-csi-s3.labels" . | nindent 4 }}
+provisioner: ch.ctrox.csi.s3-driver
+reclaimPolicy: "{{ .Values.storageclass.reclaimPolicy }}"
+parameters:
+  # Specify which mounter to use. Can be set to rclone (default), s3fs, goofys or s3backer.
+  mounter: s3fs
+  # To use an existing bucket, specify it here.
+  {{- with .Values.storageclass.bucket }}
+  bucket: {{ . }}
+  {{- end }}
+  # 'usePrefix' must be true in order to enable the prefix feature and to avoid the removal of the prefix or bucket.
+  {{- with .Values.storageclass.usePrefix }}
+  usePrefix: {{ . }}
+  {{- end }}
+  # 'prefix' can be empty (it will mount on the root of the bucket), an existing prefix or a new one.
+  {{- with .Values.storageclass.prefix }}
+  prefix: {{ . }}
+  {{- end }}
+  csi.storage.k8s.io/provisioner-secret-name: csi-s3-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: kube-system
+  csi.storage.k8s.io/controller-publish-secret-name: csi-s3-secret
+  csi.storage.k8s.io/controller-publish-secret-namespace: kube-system
+  csi.storage.k8s.io/node-stage-secret-name: csi-s3-secret
+  csi.storage.k8s.io/node-stage-secret-namespace: kube-system
+  csi.storage.k8s.io/node-publish-secret-name: csi-s3-secret
+  csi.storage.k8s.io/node-publish-secret-namespace: kube-system
